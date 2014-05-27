@@ -4,7 +4,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_CFLAGS:= -DANDROID -DLIBSSH_EXPORTS -D_FORTIFY_SOURCE=2 \
--ffunction-sections -fdata-sections
+-ffunction-sections -fdata-sections -DOPENSSL_NO_DEPRECATED
 
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/src\
@@ -62,8 +62,8 @@ LOCAL_SRC_FILES:= \
 	src/wrapper.c
 LOCAL_SHARED_LIBRARIES:= \
 	libssl\
-	libcrypto
+	libcrypto\
+	z
 LOCAL_MODULE := libssh
 
 include $(BUILD_STATIC_LIBRARY)
-
