@@ -46,6 +46,59 @@
 #include "libssh/pki_priv.h"
 #include "libssh/dh.h"
 
+#if defined(ANDROID) || defined(__BIONIC__)
+RSA *RSA_generate_key(int bits, unsigned long e_value,
+	     void (*callback)(int,int,void *), void *cb_arg)
+	{
+	BN_GENCB cb;
+	int i;
+	RSA *rsa = RSA_new();
+	BIGNUM *e = BN_new();
+
+	if(!rsa || !e) goto err;
+
+	/* The problem is when building with 8, 16, or 32 BN_ULONG,
+	 * unsigned long can be larger */
+	for (i=0; i<(int)sizeof(unsigned long)*8; i++)
+		{
+		if (e_value & (1UL<<i))
+			if (BN_set_bit(e,i) == 0)
+				goto err;
+		}
+
+	BN_GENCB_set_old(&cb, callback, cb_arg);
+
+	if(RSA_generate_key_ex(rsa, bits, e, &cb)) {
+		BN_free(e);
+		return rsa;
+	}
+err:
+	if(e) BN_free(e);
+	if(rsa) RSA_free(rsa);
+	return 0;
+	}
+	
+DSA *DSA_generate_parameters(int bits,
+		unsigned char *seed_in, int seed_len,
+		int *counter_ret, unsigned long *h_ret,
+		void (*callback)(int, int, void *),
+		void *cb_arg)
+	{
+	BN_GENCB cb;
+	DSA *ret;
+
+	if ((ret=DSA_new()) == NULL) return NULL;
+
+	BN_GENCB_set_old(&cb, callback, cb_arg);
+
+	if(DSA_generate_parameters_ex(ret, bits, seed_in, seed_len,
+				counter_ret, h_ret, &cb))
+		return ret;
+	DSA_free(ret);
+	return NULL;
+	}
+#endif
+
 struct pem_get_password_struct {
     ssh_auth_callback fn;
     void *data;
@@ -386,6 +439,7 @@ int pki_key_generate_rsa(ssh_key key, int parameter){
     key->rsa = RSA_generate_key(parameter, 65537, NULL, NULL);
     if(key->rsa == NULL)
         return SSH_ERROR;
+    
     return SSH_OK;
 }
 

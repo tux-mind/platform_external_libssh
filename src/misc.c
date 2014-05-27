@@ -47,6 +47,10 @@
 #include <ctype.h>
 #include <time.h>
 
+#if defined(__BIONIC__) || defined(ANDROID)
+#include <pthread.h>
+#endif
+
 #ifdef _WIN32
 
 #ifndef _WIN32_IE
@@ -205,14 +209,29 @@ int ssh_is_ipaddr(const char *str) {
 #define NSS_BUFLEN_PASSWD 4096
 #endif /* NSS_BUFLEN_PASSWD */
 
+
 char *ssh_get_user_home_dir(void) {
   char *szPath = NULL;
   struct passwd pwd;
   struct passwd *pwdbuf;
   char buf[NSS_BUFLEN_PASSWD];
   int rc;
-
+#if defined(ANDROID) || defined(__BIONIC__)
+	static pthread_mutex_t getpwuid_lock = PTHREAD_MUTEX_INITIALIZER;
+	
+	pthread_mutex_lock(&getpwuid_lock);
+	pwdbuf = getpwuid(getuid());
+	if(pwdbuf) {
+		memcpy(&pwd,pwdbuf,sizeof(struct passwd));
+		rc=0;
+	} else {
+		rc=-1;
+	}
+	pthread_mutex_unlock(&getpwuid_lock);
+#else
+	
   rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+#endif
   if (rc != 0) {
       szPath = getenv("HOME");
       if (szPath == NULL) {
@@ -244,8 +263,22 @@ char *ssh_get_local_username(void) {
     char buf[NSS_BUFLEN_PASSWD];
     char *name;
     int rc;
-
-    rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+#if defined(ANDROID) || defined(__BIONIC__)
+		static pthread_mutex_t getpwuid_lock = PTHREAD_MUTEX_INITIALIZER;
+		
+		pthread_mutex_lock(&getpwuid_lock);
+		pwdbuf = getpwuid(getuid());
+		if(pwdbuf) {
+			memcpy(&pwd,pwdbuf,sizeof(struct passwd));
+			rc=0;
+		} else {
+			rc=-1;
+		}
+		pthread_mutex_unlock(&getpwuid_lock);
+#else
+		
+		rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+#endif
     if (rc != 0) {
         return NULL;
     }
