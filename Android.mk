@@ -60,9 +60,10 @@ LOCAL_SRC_FILES:= \
 	src/string.c\
 	src/threads.c\
 	src/wrapper.c
+LOCAL_STATIC_LIBRARIES:= \
+	libcrypto_static\
+	libssl
 LOCAL_SHARED_LIBRARIES:= \
-	libssl\
-	libcrypto\
 	z
 LOCAL_MODULE := libssh
 
