@@ -61,8 +61,8 @@ LOCAL_SRC_FILES:= \
 	src/threads.c\
 	src/wrapper.c
 LOCAL_STATIC_LIBRARIES:= \
-	libcrypto_static\
-	libssl
+	libssl_static\
+	libcrypto_static
 LOCAL_SHARED_LIBRARIES:= \
 	z
 LOCAL_MODULE := libssh
